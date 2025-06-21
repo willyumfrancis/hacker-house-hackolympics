@@ -77,9 +77,13 @@ export default function InteractButton() {
 
   const handleAgentsSelected = () => {
     setShowAgentSelection(false);
-    // After agents are created, join the game
-    if (worldId) {
+    // Only automatically join the game if there were no agents before
+    if (worldId && !hasAgents) {
+      console.log('Initial agents created, joining game');
       void joinInput(worldId);
+    } else if (hasAgents) {
+      // If agents already existed, just show a confirmation message
+      toast.success('New agents added successfully!');
     }
   };
   // if (!isAuthenticated || game === undefined) {
@@ -89,8 +93,8 @@ export default function InteractButton() {
   //     </SignInButton>
   //   );
   // }
-  // Determine if we should show the choose agents button
-  const shouldShowChooseAgents = game && !hasAgents && !isPlaying;
+  // Always show Choose Agents button when not playing
+  const shouldShowChooseAgents = game && !isPlaying;
 
   return (
     <>

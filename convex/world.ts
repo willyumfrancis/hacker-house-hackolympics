@@ -187,10 +187,8 @@ export const createSelectedAgents = mutation({
       throw new ConvexError(`Invalid world ID: ${args.worldId}`);
     }
     
-    // Check if agents already exist
-    if (world.agents.length > 0) {
-      throw new ConvexError(`Agents already exist in this world`);
-    }
+    // We now allow adding more agents even if some already exist
+    console.log(`Adding more agents to world ${args.worldId}. Current agent count: ${world.agents.length}`);
     
     return await insertInput(ctx, world._id, 'createSelectedAgents', {
       selectedAgentIndices: args.selectedAgentIndices,

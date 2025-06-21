@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import { Id } from '../../convex/_generated/dataModel';
@@ -13,7 +13,15 @@ export default function AgentSelectionModal({ worldId, onClose, onAgentsSelected
   const availableAgents = useQuery(api.world.availableAgents);
   const createSelectedAgents = useMutation(api.world.createSelectedAgents);
   
+  // Initialize with empty array and use useEffect to populate once data is available
   const [selectedAgents, setSelectedAgents] = useState<number[]>([]);
+  
+  // Pre-select all agents by default since we only have 3 San Francisco-themed agents
+  useEffect(() => {
+    if (availableAgents && availableAgents.length > 0) {
+      setSelectedAgents(Array.from({ length: availableAgents.length }, (_, i) => i));
+    }
+  }, [availableAgents]);
   const [isCreatingAgents, setIsCreatingAgents] = useState(false);
 
   const handleAgentToggle = (agentIndex: number) => {
@@ -62,10 +70,10 @@ export default function AgentSelectionModal({ worldId, onClose, onAgentsSelected
   }
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 max-w-4xl max-h-[80vh] overflow-auto">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[1000] pointer-events-auto" style={{ pointerEvents: 'auto' }}>
+      <div className="bg-white rounded-lg p-6 max-w-4xl max-h-[80vh] overflow-auto" onClick={(e) => e.stopPropagation()}>
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-bold">Choose Your AI Agents</h2>
+          <h2 className="text-2xl font-bold">Choose San Francisco AI Agents</h2>
           <button
             onClick={onClose}
             className="text-gray-500 hover:text-gray-700 text-xl"
@@ -76,7 +84,7 @@ export default function AgentSelectionModal({ worldId, onClose, onAgentsSelected
         
         <div className="mb-4">
           <p className="text-gray-600 mb-4">
-            Select which AI agents you'd like to have in your world. Each agent has a unique personality and will interact with you and other agents.
+            Select which San Francisco-themed AI agents you'd like to add to your world. Create multiple copies of the same agent type for more chaotic interactions!
           </p>
         </div>
 
