@@ -2,7 +2,9 @@ import { v } from 'convex/values';
 import { internal } from './_generated/api';
 import { DatabaseReader, MutationCtx, mutation } from './_generated/server';
 import { Descriptions } from '../data/characters';
-import * as map from '../data/gentle';
+// Import both maps so we can choose which one to use
+import * as gentleMap from '../data/gentle';
+import { simpleMap } from './aiTown/simpleMap';
 import { insertInput } from './aiTown/insertInput';
 import { Id } from './_generated/dataModel';
 import { createEngine } from './aiTown/main';
@@ -44,7 +46,7 @@ const init = mutation({
 });
 export default init;
 
-async function getOrCreateDefaultWorld(ctx: MutationCtx) {
+export async function getOrCreateDefaultWorld(ctx: MutationCtx) {
   const now = Date.now();
 
   let worldStatus = await ctx.db
@@ -72,17 +74,18 @@ async function getOrCreateDefaultWorld(ctx: MutationCtx) {
     worldId: worldId,
   });
   worldStatus = (await ctx.db.get(worldStatusId))!;
+  // Use the simple map instead of the gentle map
   await ctx.db.insert('maps', {
     worldId,
-    width: map.mapwidth,
-    height: map.mapheight,
-    tileSetUrl: map.tilesetpath,
-    tileSetDimX: map.tilesetpxw,
-    tileSetDimY: map.tilesetpxh,
-    tileDim: map.tiledim,
-    bgTiles: map.bgtiles,
-    objectTiles: map.objmap,
-    animatedSprites: map.animatedsprites,
+    width: simpleMap.width,
+    height: simpleMap.height,
+    tileSetUrl: simpleMap.tileSetUrl,
+    tileSetDimX: simpleMap.tileSetDimX,
+    tileSetDimY: simpleMap.tileSetDimY,
+    tileDim: simpleMap.tileDim,
+    bgTiles: simpleMap.bgTiles,
+    objectTiles: simpleMap.objectTiles,
+    animatedSprites: simpleMap.animatedSprites,
   });
   await ctx.scheduler.runAfter(0, internal.aiTown.main.runStep, {
     worldId,

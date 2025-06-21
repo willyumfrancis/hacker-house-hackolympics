@@ -154,23 +154,36 @@ export const agentInputs = {
   }),
   createSelectedAgents: inputHandler({
     args: {
-      selectedAgentIndices: v.array(v.number()),
+      agentsWithSpecializations: v.array(v.object({
+        index: v.number(),
+        specialization: v.string(),
+      })),
     },
     handler: (game, now, args) => {
       const createdAgents = [];
       
-      for (const descriptionIndex of args.selectedAgentIndices) {
+      for (const agentInfo of args.agentsWithSpecializations) {
+        const descriptionIndex = agentInfo.index;
+        const specialization = agentInfo.specialization;
+        
         if (descriptionIndex < 0 || descriptionIndex >= Descriptions.length) {
           throw new Error(`Invalid description index: ${descriptionIndex}`);
         }
         
         const description = Descriptions[descriptionIndex];
+        
+        // Customize the identity with specialization if provided
+        let enhancedIdentity = description.identity;
+        if (specialization && specialization.trim() !== '') {
+          enhancedIdentity = `${description.identity} You specialize in ${specialization} and have deep expertise in this area. You frequently reference your specialized knowledge in conversations.`;
+        }
+        
         const playerId = Player.join(
           game,
           now,
           description.name,
           description.character,
-          description.identity,
+          enhancedIdentity,
         );
         const agentId = game.allocId('agents');
         game.world.agents.set(
@@ -188,7 +201,7 @@ export const agentInputs = {
           agentId,
           new AgentDescription({
             agentId: agentId,
-            identity: description.identity,
+            identity: enhancedIdentity,
             plan: description.plan,
           }),
         );

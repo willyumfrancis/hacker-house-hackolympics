@@ -179,7 +179,10 @@ export const leaveWorld = mutation({
 export const createSelectedAgents = mutation({
   args: {
     worldId: v.id('worlds'),
-    selectedAgentIndices: v.array(v.number()),
+    selectedAgents: v.array(v.object({
+      agentIndex: v.number(),
+      specialization: v.string(),
+    })),
   },
   handler: async (ctx, args) => {
     const world = await ctx.db.get(args.worldId);
@@ -190,8 +193,24 @@ export const createSelectedAgents = mutation({
     // We now allow adding more agents even if some already exist
     console.log(`Adding more agents to world ${args.worldId}. Current agent count: ${world.agents.length}`);
     
+    // Process the agent specializations
+    const agentsWithSpecializations = args.selectedAgents.map(agent => {
+      const agentData = Descriptions[agent.agentIndex];
+      // If specialization is provided, enhance the agent's identity
+      if (agent.specialization) {
+        return {
+          index: agent.agentIndex,
+          specialization: agent.specialization,
+        };
+      }
+      return {
+        index: agent.agentIndex,
+        specialization: '',
+      };
+    });
+    
     return await insertInput(ctx, world._id, 'createSelectedAgents', {
-      selectedAgentIndices: args.selectedAgentIndices,
+      agentsWithSpecializations: agentsWithSpecializations,
     });
   },
 });

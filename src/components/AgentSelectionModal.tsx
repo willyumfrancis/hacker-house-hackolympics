@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useQuery, useMutation } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import { Id } from '../../convex/_generated/dataModel';
+import { toast } from 'react-toastify';
 
 interface AgentSelectionModalProps {
   worldId: Id<'worlds'>;
@@ -16,10 +17,20 @@ export default function AgentSelectionModal({ worldId, onClose, onAgentsSelected
   // Initialize with empty array and use useEffect to populate once data is available
   const [selectedAgents, setSelectedAgents] = useState<number[]>([]);
   
+  // State for storing specializations for each agent
+  const [specializations, setSpecializations] = useState<{[key: number]: string}>({});
+  
   // Pre-select all agents by default since we only have 3 San Francisco-themed agents
   useEffect(() => {
     if (availableAgents && availableAgents.length > 0) {
       setSelectedAgents(Array.from({ length: availableAgents.length }, (_, i) => i));
+      
+      // Initialize empty specializations
+      const initialSpecializations: {[key: number]: string} = {};
+      availableAgents.forEach((_, index) => {
+        initialSpecializations[index] = '';
+      });
+      setSpecializations(initialSpecializations);
     }
   }, [availableAgents]);
   const [isCreatingAgents, setIsCreatingAgents] = useState(false);
@@ -37,13 +48,21 @@ export default function AgentSelectionModal({ worldId, onClose, onAgentsSelected
     
     setIsCreatingAgents(true);
     try {
+      // Create an array of agents with their specializations
+      const agentsWithSpecializations = selectedAgents.map(index => ({
+        agentIndex: index,
+        specialization: specializations[index] || ''
+      }));
+      
       await createSelectedAgents({
         worldId,
-        selectedAgentIndices: selectedAgents,
+        selectedAgents: agentsWithSpecializations,
       });
       onAgentsSelected();
+      toast.success('Agents created successfully!');
     } catch (error) {
       console.error('Failed to create agents:', error);
+      toast.error('Failed to create agents');
     } finally {
       setIsCreatingAgents(false);
     }
@@ -110,12 +129,11 @@ export default function AgentSelectionModal({ worldId, onClose, onAgentsSelected
           {availableAgents.map((agent, index) => (
             <div
               key={index}
-              className={`border rounded-lg p-4 cursor-pointer transition-all ${
+              className={`border rounded-lg p-4 transition-all ${
                 selectedAgents.includes(index)
                   ? 'border-blue-500 bg-blue-50'
                   : 'border-gray-200 hover:border-gray-300'
               }`}
-              onClick={() => handleAgentToggle(index)}
             >
               <div className="flex items-center mb-2">
                 <input
@@ -123,15 +141,38 @@ export default function AgentSelectionModal({ worldId, onClose, onAgentsSelected
                   checked={selectedAgents.includes(index)}
                   onChange={() => handleAgentToggle(index)}
                   className="mr-3"
+                  id={`agent-${index}`}
                 />
-                <h3 className="font-semibold text-lg">{agent.name}</h3>
+                <label htmlFor={`agent-${index}`} className="font-semibold text-lg cursor-pointer">{agent.name}</label>
               </div>
               <p className="text-sm text-gray-600 mb-2">
                 <strong>Goal:</strong> {agent.plan}
               </p>
-              <p className="text-xs text-gray-500 line-clamp-3">
+              <p className="text-xs text-gray-500 line-clamp-3 mb-3">
                 {agent.identity}
               </p>
+              
+              {selectedAgents.includes(index) && (
+                <div className="mt-3">
+                  <label htmlFor={`specialization-${index}`} className="block text-sm font-medium text-gray-700 mb-1">
+                    Specialization (Optional)
+                  </label>
+                  <input
+                    type="text"
+                    id={`specialization-${index}`}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="e.g., ClimateTech, AI, Blockchain"
+                    value={specializations[index] || ''}
+                    onChange={(e) => {
+                      setSpecializations(prev => ({
+                        ...prev,
+                        [index]: e.target.value
+                      }));
+                    }}
+                    onClick={(e) => e.stopPropagation()}
+                  />
+                </div>
+              )}
             </div>
           ))}
         </div>
