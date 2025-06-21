@@ -12,6 +12,7 @@ import { detectMismatchedLLMProvider } from './util/llm';
 const init = mutation({
   args: {
     numAgents: v.optional(v.number()),
+    autoCreateAgents: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
     detectMismatchedLLMProvider();
@@ -22,17 +23,21 @@ const init = mutation({
       );
       return;
     }
-    const shouldCreate = await shouldCreateAgents(
-      ctx.db,
-      worldStatus.worldId,
-      worldStatus.engineId,
-    );
-    if (shouldCreate) {
-      const toCreate = args.numAgents !== undefined ? args.numAgents : Descriptions.length;
-      for (let i = 0; i < toCreate; i++) {
-        await insertInput(ctx, worldStatus.worldId, 'createAgent', {
-          descriptionIndex: i % Descriptions.length,
-        });
+    
+    // Only auto-create agents if explicitly requested (for backwards compatibility with dev commands)
+    if (args.autoCreateAgents) {
+      const shouldCreate = await shouldCreateAgents(
+        ctx.db,
+        worldStatus.worldId,
+        worldStatus.engineId,
+      );
+      if (shouldCreate) {
+        const toCreate = args.numAgents !== undefined ? args.numAgents : Descriptions.length;
+        for (let i = 0; i < toCreate; i++) {
+          await insertInput(ctx, worldStatus.worldId, 'createAgent', {
+            descriptionIndex: i % Descriptions.length,
+          });
+        }
       }
     }
   },

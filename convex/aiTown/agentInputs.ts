@@ -152,4 +152,50 @@ export const agentInputs = {
       return { agentId };
     },
   }),
+  createSelectedAgents: inputHandler({
+    args: {
+      selectedAgentIndices: v.array(v.number()),
+    },
+    handler: (game, now, args) => {
+      const createdAgents = [];
+      
+      for (const descriptionIndex of args.selectedAgentIndices) {
+        if (descriptionIndex < 0 || descriptionIndex >= Descriptions.length) {
+          throw new Error(`Invalid description index: ${descriptionIndex}`);
+        }
+        
+        const description = Descriptions[descriptionIndex];
+        const playerId = Player.join(
+          game,
+          now,
+          description.name,
+          description.character,
+          description.identity,
+        );
+        const agentId = game.allocId('agents');
+        game.world.agents.set(
+          agentId,
+          new Agent({
+            id: agentId,
+            playerId: playerId,
+            inProgressOperation: undefined,
+            lastConversation: undefined,
+            lastInviteAttempt: undefined,
+            toRemember: undefined,
+          }),
+        );
+        game.agentDescriptions.set(
+          agentId,
+          new AgentDescription({
+            agentId: agentId,
+            identity: description.identity,
+            plan: description.plan,
+          }),
+        );
+        createdAgents.push({ agentId, name: description.name });
+      }
+      
+      return { createdAgents };
+    },
+  }),
 };

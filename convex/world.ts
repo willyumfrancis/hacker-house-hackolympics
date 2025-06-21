@@ -1,6 +1,6 @@
 import { ConvexError, v } from 'convex/values';
 import { internalMutation, mutation, query } from './_generated/server';
-import { characters } from '../data/characters';
+import { characters, Descriptions } from '../data/characters';
 import { insertInput } from './aiTown/insertInput';
 import {
   DEFAULT_NAME,
@@ -19,6 +19,18 @@ export const defaultWorldStatus = query({
       .filter((q) => q.eq(q.field('isDefault'), true))
       .first();
     return worldStatus;
+  },
+});
+
+export const availableAgents = query({
+  handler: async () => {
+    return Descriptions.map((desc, index) => ({
+      index,
+      name: desc.name,
+      character: desc.character,
+      identity: desc.identity,
+      plan: desc.plan,
+    }));
   },
 });
 
@@ -160,6 +172,28 @@ export const leaveWorld = mutation({
     }
     await insertInput(ctx, world._id, 'leave', {
       playerId: existingPlayer.id,
+    });
+  },
+});
+
+export const createSelectedAgents = mutation({
+  args: {
+    worldId: v.id('worlds'),
+    selectedAgentIndices: v.array(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const world = await ctx.db.get(args.worldId);
+    if (!world) {
+      throw new ConvexError(`Invalid world ID: ${args.worldId}`);
+    }
+    
+    // Check if agents already exist
+    if (world.agents.length > 0) {
+      throw new ConvexError(`Agents already exist in this world`);
+    }
+    
+    return await insertInput(ctx, world._id, 'createSelectedAgents', {
+      selectedAgentIndices: args.selectedAgentIndices,
     });
   },
 });

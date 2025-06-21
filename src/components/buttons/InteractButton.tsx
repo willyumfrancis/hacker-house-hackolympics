@@ -6,9 +6,10 @@ import { api } from '../../../convex/_generated/api';
 // import { SignInButton } from '@clerk/clerk-react';
 import { ConvexError } from 'convex/values';
 import { Id } from '../../../convex/_generated/dataModel';
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import { waitForInput } from '../../hooks/sendInput';
 import { useServerGame } from '../../hooks/serverGame';
+import AgentSelectionModal from '../AgentSelectionModal';
 
 export default function InteractButton() {
   // const { isAuthenticated } = useConvexAuth();
@@ -21,6 +22,12 @@ export default function InteractButton() {
   const join = useMutation(api.world.joinWorld);
   const leave = useMutation(api.world.leaveWorld);
   const isPlaying = !!userPlayerId;
+  
+  const [showAgentSelection, setShowAgentSelection] = useState(false);
+  
+  // Check if there are any agents in the world
+  const hasAgents = game && game.world.agents.size > 0;
+  
 
   const convex = useConvex();
   const joinInput = useCallback(
@@ -52,11 +59,26 @@ export default function InteractButton() {
     ) {
       return;
     }
+    
     if (isPlaying) {
       console.log(`Leaving game for player ${userPlayerId}`);
       void leave({ worldId });
     } else {
+      // If no agents exist, inform user they need to choose agents first
+      if (!hasAgents) {
+        alert('Please choose agents first before joining the world!');
+        return;
+      }
+      
       console.log(`Joining game`);
+      void joinInput(worldId);
+    }
+  };
+
+  const handleAgentsSelected = () => {
+    setShowAgentSelection(false);
+    // After agents are created, join the game
+    if (worldId) {
       void joinInput(worldId);
     }
   };
@@ -67,9 +89,33 @@ export default function InteractButton() {
   //     </SignInButton>
   //   );
   // }
+  // Determine if we should show the choose agents button
+  const shouldShowChooseAgents = game && !hasAgents && !isPlaying;
+
   return (
-    <Button imgUrl={interactImg} onClick={joinOrLeaveGame}>
-      {isPlaying ? 'Leave' : 'Interact'}
-    </Button>
+    <>
+      {/* Always show the main Interact/Leave button */}
+      <Button imgUrl={interactImg} onClick={joinOrLeaveGame}>
+        {!game ? 'Loading...' : isPlaying ? 'Leave' : 'Interact'}
+      </Button>
+      
+      {/* Show Choose Agents button when no agents exist */}
+      {shouldShowChooseAgents && (
+        <Button 
+          imgUrl={interactImg} 
+          onClick={() => setShowAgentSelection(true)}
+        >
+          Choose Agents
+        </Button>
+      )}
+      
+      {showAgentSelection && worldId && (
+        <AgentSelectionModal
+          worldId={worldId}
+          onClose={() => setShowAgentSelection(false)}
+          onAgentsSelected={handleAgentsSelected}
+        />
+      )}
+    </>
   );
 }
